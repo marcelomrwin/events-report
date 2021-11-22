@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Events Evolution Delay</title>
+
+    <!-- Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700">
+    <!-- Icons -->
+    <link rel="stylesheet" href="assets/vendor/nucleo/css/nucleo.css" type="text/css">
+    <link rel="stylesheet" href="assets/vendor/@fortawesome/fontawesome-free/css/all.min.css" type="text/css">
+    <!-- Page plugins -->
+    <!-- Argon CSS -->
+    <link rel="stylesheet" href="assets/css/argon.css?v=1.2.0" type="text/css">
+
+</head>
+
+<body>
+<p>{title}</p>
+
+        <div class="row">
+            <div class="col bg-default">
+                <h6 class="text-light text-uppercase ls-1 mb-1">Events Delay Over Time</h6>
+                <h5 class="h3 text-white mb-0">Computed every 5 Minutes</h5>
+            </div>
+            <div class="card-body">
+                <div id="chartContainerGrouped" class="chart">
+                    <canvas id="chartCanvasGrouped" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col bg-default">
+                <h6 class="text-light text-uppercase ls-1 mb-1">Events Delay Over Time</h6>
+                <h5 class="h3 text-white mb-0">Computed in Minutes</h5>
+            </div>
+            <div class="card-body">
+                <div id="chartContainer" class="chart">
+                    <canvas id="chartCanvas" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+<!-- Core -->
+<script src="assets/vendor/jquery/dist/jquery.min.js"></script>
+<script src="assets/vendor/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/vendor/js-cookie/js.cookie.js"></script>
+<script src="assets/vendor/jquery.scrollbar/jquery.scrollbar.min.js"></script>
+<script src="assets/vendor/jquery-scroll-lock/dist/jquery-scrollLock.min.js"></script>
+<!-- Optional JS -->
+<script src="assets/vendor/chart.js/dist/Chart.min.js"></script>
+<script src="assets/vendor/chart.js/dist/Chart.extension.js"></script>
+
+<script>
+
+    var Popover = (function() {
+
+        // Variables
+
+        var $popover = $('[data-toggle="popover"]'),
+            $popoverClass = '';
+
+
+        // Methods
+
+        function init($this) {
+            if ($this.data('color')) {
+                $popoverClass = 'popover-' + $this.data('color');
+            }
+
+            var options = {
+                trigger: 'focus',
+                template: '<div class="popover ' + $popoverClass + '" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+            };
+
+            $this.popover(options);
+        }
+
+
+        // Events
+
+        if ($popover.length) {
+            $popover.each(function() {
+                init($(this));
+            });
+        }
+
+    })();
+
+    var Tooltip = (function() {
+
+        // Variables
+
+        var $tooltip = $('[data-toggle="tooltip"]');
+
+
+        // Methods
+
+        function init() {
+            $tooltip.tooltip();
+        }
+
+
+        // Events
+
+        if ($tooltip.length) {
+            init();
+        }
+
+    })();
+
+    var Charts = (function() {
+
+        // Variable
+
+        var $toggle = $('[data-toggle="chart"]');
+        var mode = 'light';//(themeMode) ? themeMode : 'light';
+        var fonts = {
+            base: 'Open Sans'
+        }
+
+        // Colors
+        var colors = {
+            gray: {
+                100: '#f6f9fc',
+                200: '#e9ecef',
+                300: '#dee2e6',
+                400: '#ced4da',
+                500: '#adb5bd',
+                600: '#8898aa',
+                700: '#525f7f',
+                800: '#32325d',
+                900: '#212529'
+            },
+            theme: {
+                'default': '#172b4d',
+                'primary': '#5e72e4',
+                'secondary': '#f4f5f7',
+                'info': '#11cdef',
+                'success': '#2dce89',
+                'danger': '#f5365c',
+                'warning': '#fb6340'
+            },
+            black: '#12263F',
+            white: '#FFFFFF',
+            transparent: 'transparent',
+        };
+
+
+        // Methods
+
+        // Chart.js global options
+        function chartOptions() {
+
+            // Options
+            var options = {
+                defaults: {
+                    global: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        defaultColor: (mode == 'dark') ? colors.gray[700] : colors.gray[600],
+                        defaultFontColor: (mode == 'dark') ? colors.gray[700] : colors.gray[600],
+                        defaultFontFamily: fonts.base,
+                        defaultFontSize: 13,
+                        layout: {
+                            padding: 0
+                        },
+                        legend: {
+                            display: false,
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 16
+                            }
+                        },
+                        elements: {
+                            point: {
+                                radius: 0,
+                                backgroundColor: colors.theme['primary']
+                            },
+                            line: {
+                                tension: .4,
+                                borderWidth: 4,
+                                borderColor: colors.theme['primary'],
+                                backgroundColor: colors.transparent,
+                                borderCapStyle: 'rounded'
+                            },
+                            rectangle: {
+                                backgroundColor: colors.theme['warning']
+                            },
+                            arc: {
+                                backgroundColor: colors.theme['primary'],
+                                borderColor: (mode == 'dark') ? colors.gray[800] : colors.white,
+                                borderWidth: 4
+                            }
+                        },
+                        tooltips: {
+                            enabled: true,
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    doughnut: {
+                        cutoutPercentage: 83,
+                        legendCallback: function(chart) {
+                            var data = chart.data;
+                            var content = '';
+
+                            data.labels.forEach(function(label, index) {
+                                var bgColor = data.datasets[0].backgroundColor[index];
+
+                                content += '<span class="chart-legend-item">';
+                                content += '<i class="chart-legend-indicator" style="background-color: ' + bgColor + '"></i>';
+                                content += label;
+                                content += '</span>';
+                            });
+
+                            return content;
+                        }
+                    }
+                }
+            }
+
+            // yAxes
+            Chart.scaleService.updateScaleDefaults('linear', {
+                gridLines: {
+                    borderDash: [2],
+                    borderDashOffset: [2],
+                    color: (mode == 'dark') ? colors.gray[900] : colors.gray[300],
+                    drawBorder: false,
+                    drawTicks: false,
+                    drawOnChartArea: true,
+                    zeroLineWidth: 0,
+                    zeroLineColor: 'rgba(0,0,0,0)',
+                    zeroLineBorderDash: [2],
+                    zeroLineBorderDashOffset: [2]
+                },
+                ticks: {
+                    beginAtZero: true,
+                    padding: 10,
+                    callback: function(value) {
+                        if (!(value % 10)) {
+                            return value
+                        }
+                    }
+                }
+            });
+
+            // xAxes
+            Chart.scaleService.updateScaleDefaults('category', {
+                gridLines: {
+                    drawBorder: false,
+                    drawOnChartArea: false,
+                    drawTicks: false
+                },
+                ticks: {
+                    padding: 20
+                },
+                maxBarThickness: 10
+            });
+
+            return options;
+
+        }
+
+        // Parse global options
+        function parseOptions(parent, options) {
+            for (var item in options) {
+                if (typeof options[item] !== 'object') {
+                    parent[item] = options[item];
+                } else {
+                    parseOptions(parent[item], options[item]);
+                }
+            }
+        }
+
+        // Push options
+        function pushOptions(parent, options) {
+            for (var item in options) {
+                if (Array.isArray(options[item])) {
+                    options[item].forEach(function(data) {
+                        parent[item].push(data);
+                    });
+                } else {
+                    pushOptions(parent[item], options[item]);
+                }
+            }
+        }
+
+        // Pop options
+        function popOptions(parent, options) {
+            for (var item in options) {
+                if (Array.isArray(options[item])) {
+                    options[item].forEach(function(data) {
+                        parent[item].pop();
+                    });
+                } else {
+                    popOptions(parent[item], options[item]);
+                }
+            }
+        }
+
+        // Toggle options
+        function toggleOptions(elem) {
+            var options = elem.data('add');
+            var $target = $(elem.data('target'));
+            var $chart = $target.data('chart');
+
+            if (elem.is(':checked')) {
+
+                // Add options
+                pushOptions($chart, options);
+
+                // Update chart
+                $chart.update();
+            } else {
+
+                // Remove options
+                popOptions($chart, options);
+
+                // Update chart
+                $chart.update();
+            }
+        }
+
+        // Update options
+        function updateOptions(elem) {
+            var options = elem.data('update');
+            var $target = $(elem.data('target'));
+            var $chart = $target.data('chart');
+
+            // Parse options
+            parseOptions($chart, options);
+
+            // Toggle ticks
+            toggleTicks(elem, $chart);
+
+            // Update chart
+            $chart.update();
+        }
+
+        // Toggle ticks
+        function toggleTicks(elem, $chart) {
+
+            if (elem.data('prefix') !== undefined || elem.data('prefix') !== undefined) {
+                var prefix = elem.data('prefix') ? elem.data('prefix') : '';
+                var suffix = elem.data('suffix') ? elem.data('suffix') : '';
+
+                // Update ticks
+                $chart.options.scales.yAxes[0].ticks.callback = function(value) {
+                    if (!(value % 10)) {
+                        return prefix + value + suffix;
+                    }
+                }
+
+                // Update tooltips
+                $chart.options.tooltips.callbacks.label = function(item, data) {
+                    var label = data.datasets[item.datasetIndex].label || '';
+                    var yLabel = item.yLabel;
+                    var content = '';
+
+                    if (data.datasets.length > 1) {
+                        content += '<span class="popover-body-label mr-auto">' + label + '</span>';
+                    }
+
+                    content += '<span class="popover-body-value">' + prefix + yLabel + suffix + '</span>';
+                    return content;
+                }
+
+            }
+        }
+
+
+        // Events
+
+        // Parse global options
+        if (window.Chart) {
+            parseOptions(Chart, chartOptions());
+        }
+
+        // Toggle options
+        $toggle.on({
+            'change': function() {
+                var $this = $(this);
+
+                if ($this.is('[data-add]')) {
+                    toggleOptions($this);
+                }
+            },
+            'click': function() {
+                var $this = $(this);
+
+                if ($this.is('[data-update]')) {
+                    updateOptions($this);
+                }
+            }
+        });
+
+
+        // Return
+
+        return {
+            colors: colors,
+            fonts: fonts,
+            mode: mode
+        };
+
+    })();
+
+    var DelayChartGrouped = (function(){
+        //Variables
+        var $chart = $('#chartCanvasGrouped');
+
+        //Methods
+        function init($chart){
+            $.ajax({
+                url: '/events/plot/grouped/300',
+                method: 'GET',
+                datatype: 'json',
+                success: function(results) {
+                    var labels = [], chartData=[];
+                    // Split timestamp and data into separate arrays
+                    results["data"].forEach(function(evt) {
+                        labels.push(parseInt(evt.diffBetweenCreatedAndEms));
+                        chartData.push(evt.emsDelivery);
+                    });
+
+                    var delayChartGrouped = new Chart($chart,{
+                        type: 'line',
+                        data: {
+                            labels: chartData,
+                            datasets: [{
+                                label: 'Delay (seconds)',
+                                lineTension: 0,
+                                data: labels,
+                                borderWidth: 1,
+                                pointRadius: 2,
+                                fill: false,
+                            }]
+                        },
+                        options:
+                            {
+                                scales: {
+                                    yAxes: [{
+                                        gridLines: {
+                                            lineWidth: 1,
+                                            color: Charts.colors.gray[900],
+                                            zeroLineColor: Charts.colors.gray[900]
+                                        },
+                                        ticks: {
+                                            callback: function(value) {
+                                                return value;
+                                            }
+                                        }
+                                    }]
+                                },
+                                tooltips: {
+                                    callbacks: {
+                                        label: function(item, data) {
+                                            var label = data.datasets[item.datasetIndex].label || '';
+                                            var yLabel = item.yLabel;
+                                            var content = '';
+
+                                            if (data.datasets.length > 1) {
+                                                content += '<span class="popover-body-label mr-auto">' + label + '</span>';
+                                            }
+
+                                            content +=  yLabel ;
+                                            return content;
+                                        }
+                                    }
+                                },
+                                plugins:
+                                    {
+                                        legend: { position: 'right', },
+                                        title:
+                                            {
+                                                display: true,
+                                                text: 'Interval between event creation and EMS publication'
+                                            }
+                                    }
+                            }
+                    });
+
+                    // Save to jQuery object
+                    $chart.data('chart', delayChartGrouped);
+                },
+                error: function(result) {
+                    console.log(result)
+                }
+            })
+
+        };
+
+        // Events
+        if ($chart.length) {
+            init($chart);
+        }
+
+    })();
+
+    var DelayChart = (function(){
+        //Variables
+        var $chart = $('#chartCanvas');
+
+        //Methods
+
+        function init($chart){
+
+
+            $.ajax({
+                url: '/events/plot/general',
+                method: 'GET',
+                datatype: 'json',
+                success: function(results) {
+                    var labels = [], chartData=[];
+                    // Split timestamp and data into separate arrays
+                    results["data"].forEach(function(evt) {
+                        labels.push(parseInt(evt.diffBetweenCreatedAndEms));
+                        chartData.push(evt.emsDelivery);
+                    });
+
+                    var delayChart = new Chart($chart,{
+                        type: 'line',
+                        data: {
+                            labels: chartData,
+                            datasets: [{
+                                label: 'Delay (seconds)',
+                                lineTension: 0,
+                                data: labels,
+                                borderWidth: 1,
+                                pointRadius: 2,
+                                fill: false,
+                            }]
+                        },
+                        options:
+                            {
+                                scales: {
+                                    yAxes: [{
+                                        gridLines: {
+                                            lineWidth: 1,
+                                            color: Charts.colors.gray[900],
+                                            zeroLineColor: Charts.colors.gray[900]
+                                        },
+                                        ticks: {
+                                            callback: function(value) {
+                                                return value;
+                                            }
+                                        }
+                                    }]
+                                },
+                                tooltips: {
+                                    callbacks: {
+                                        label: function(item, data) {
+                                            var label = data.datasets[item.datasetIndex].label || '';
+                                            var yLabel = item.yLabel;
+                                            var content = '';
+
+                                            if (data.datasets.length > 1) {
+                                                content += '<span class="popover-body-label mr-auto">' + label + '</span>';
+                                            }
+
+                                            content +=  yLabel ;
+                                            return content;
+                                        }
+                                    }
+                                },
+                                plugins:
+                                    {
+                                        legend: { position: 'right', },
+                                        title:
+                                            {
+                                                display: true,
+                                                text: 'Interval between event creation and EMS publication'
+                                            }
+                                    }
+                            }
+                    });
+
+                    // Save to jQuery object
+                    $chart.data('chart', delayChart);
+                },
+                error: function(result) {
+                    console.log(result)
+                }
+            })
+
+        };
+
+        // Events
+        if ($chart.length) {
+            init($chart);
+        }
+
+    })();
+
+</script>
+</body>
+</html>
