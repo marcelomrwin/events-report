@@ -26,6 +26,19 @@
         <div class="row">
             <div class="col bg-default">
                 <h6 class="text-light text-uppercase ls-1 mb-1">Events Delay Over Time</h6>
+                <h5 class="h3 text-white mb-0">Computed every 10 Minutes</h5>
+            </div>
+            <div class="card-body">
+                <div id="chartContainerGrouped10" class="chart">
+                    <canvas id="chartCanvasGrouped10" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col bg-default">
+                <hr/>
+                <h6 class="text-light text-uppercase ls-1 mb-1">Events Delay Over Time</h6>
                 <h5 class="h3 text-white mb-0">Computed every 5 Minutes</h5>
             </div>
             <div class="card-body">
@@ -37,6 +50,7 @@
 
         <div class="row">
             <div class="col bg-default">
+                <hr/>
                 <h6 class="text-light text-uppercase ls-1 mb-1">Events Delay Over Time</h6>
                 <h5 class="h3 text-white mb-0">Computed in Minutes</h5>
             </div>
@@ -58,6 +72,12 @@
 <script src="assets/vendor/chart.js/dist/Chart.extension.js"></script>
 
 <script>
+    Number.prototype.toHHMMSS = function() {
+    var hours = Math.floor(this / 3600) < 10 ? ("00" + Math.floor(this / 3600)).slice(-2) : Math.floor(this / 3600);
+    var minutes = ("00" + Math.floor((this % 3600) / 60)).slice(-2);
+    var seconds = ("00" + (this % 3600) % 60).slice(-2);
+    return hours + ":" + minutes + ":" + seconds;
+    }
 
     var Popover = (function() {
 
@@ -413,6 +433,100 @@
 
     })();
 
+    var DelayChartGrouped10 = (function(){
+        //Variables
+        var $chart = $('#chartCanvasGrouped10');
+
+        //Methods
+        function init($chart){
+            $.ajax({
+                url: '/events/plot/grouped/600',
+                method: 'GET',
+                datatype: 'json',
+                success: function(results) {
+                    var labels = [], chartData=[];
+                    // Split timestamp and data into separate arrays
+                    results["data"].forEach(function(evt) {
+                        labels.push(parseInt(evt.diffBetweenCreatedAndEms));
+                        chartData.push(evt.emsDelivery);
+                    });
+
+                    var delayChartGrouped10 = new Chart($chart,{
+                        type: 'line',
+                        data: {
+                            labels: chartData,
+                            datasets: [{
+                                label: 'Delay (seconds)',
+                                lineTension: 0,
+                                data: labels,
+                                borderWidth: 1,
+                                pointRadius: 2,
+                                fill: false,
+                            }]
+                        },
+                        options:
+                            {
+                                scales: {
+                                    yAxes: [{
+                                        gridLines: {
+                                            lineWidth: 1,
+                                            color: Charts.colors.gray[900],
+                                            zeroLineColor: Charts.colors.gray[900]
+                                        },
+                                        ticks: {
+                                            callback: function(value) {                                                
+                                                return value;
+                                            }
+                                        }
+                                    }]
+                                },
+                                tooltips: {
+                                    callbacks: {
+                                        label: function(item, data) {
+                                            var label = data.datasets[item.datasetIndex].label || '';
+                                            var yLabel = item.yLabel;
+                                            var content = '';
+
+                                            if (data.datasets.length > 1) {
+                                                content += '<span class="popover-body-label mr-auto">' + label + '</span>';
+                                            }
+
+                                            var formatted =' ( '+ parseInt(yLabel).toHHMMSS() +' )';
+
+                                            content +=  yLabel + formatted ;
+                                            return content;
+                                        }
+                                    }
+                                },
+                                plugins:
+                                    {
+                                        legend: { position: 'right', },
+                                        title:
+                                            {
+                                                display: true,
+                                                text: 'Interval between event creation and EMS publication'
+                                            }
+                                    }
+                            }
+                    });
+
+                    // Save to jQuery object
+                    $chart.data('chart', delayChartGrouped10);
+                },
+                error: function(result) {
+                    console.log(result)
+                }
+            })
+
+        };
+
+        // Events
+        if ($chart.length) {
+            init($chart);
+        }
+
+    })();
+
     var DelayChartGrouped = (function(){
         //Variables
         var $chart = $('#chartCanvasGrouped');
@@ -471,7 +585,10 @@
                                                 content += '<span class="popover-body-label mr-auto">' + label + '</span>';
                                             }
 
-                                            content +=  yLabel ;
+                                            var formatted =' ( '+ parseInt(yLabel).toHHMMSS() +' )';
+
+                                            content +=  yLabel + formatted ;
+                                            
                                             return content;
                                         }
                                     }
@@ -566,7 +683,9 @@
                                                 content += '<span class="popover-body-label mr-auto">' + label + '</span>';
                                             }
 
-                                            content +=  yLabel ;
+                                            var formatted =' ( '+ parseInt(yLabel).toHHMMSS() +' )';
+
+                                            content +=  yLabel + formatted ;
                                             return content;
                                         }
                                     }
@@ -600,6 +719,9 @@
 
     })();
 
+    window.onload = function(){
+        window.scrollTo(0, 0);
+    }
 </script>
 </body>
 </html>

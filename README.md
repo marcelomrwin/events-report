@@ -64,12 +64,15 @@ If you want to learn more about building native executables, please consult http
 
 ## Start MongoDB
 ```shell script
-docker run -it --rm -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=password mongo:4.4
+docker run -it --rm -p 27017:27017 -e TZ='Europe/Madrid' -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=password mongo:4.4 --name mongodb
 ```
 
 ## Execute with container
 ```shell script
 ./mvnw clean package -Pnative -Dquarkus.native.container-build=true
 docker build -f src/main/docker/Dockerfile.native-distroless -t marcelodsales/events-report .
-docker run --rm -p 8080:8080 -v /Users/marcelosales/desenvolvimento/projetos/reply/scale-ems-pod/public/reports/20211120T100751170502_3540_5:/report -e MONGODB_HOST=host.docker.internal -e REPORT_PATH=/report marcelodsales/events-report
+
+docker run --name report --rm -p 8080:8080 -v /Users/marcelosales/desenvolvimento/projetos/reply/scale-ems-pod/public/reports/20211120T100751170502_3540_5:/report -e TZ='Europe/Madrid' -e MONGODB_HOST=host.docker.internal -e REPORT_PATH=/report marcelodsales/events-report
+
+docker run --name report --rm -p 8080:8080 -v /Users/marcelosales/desenvolvimento/projetos/reply/scale-ems-pod/public/reports/20211120T172434202573_3540_50:/report -e TZ='Europe/Madrid' -e MONGODB_HOST=host.docker.internal -e REPORT_PATH=/report marcelodsales/events-report
 ```
