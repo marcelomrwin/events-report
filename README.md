@@ -62,6 +62,11 @@ If you want to learn more about building native executables, please consult http
 
 - RESTEasy JAX-RS ([guide](https://quarkus.io/guides/rest-json)): REST endpoint framework implementing JAX-RS and more
 
+## Start MongoDB
+```shell script
+docker run -it --rm -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=password mongo:4.4
+```
+
 ## Execute with container
 ```shell script
 ./mvnw clean package -Pnative -Dquarkus.native.container-build=true
