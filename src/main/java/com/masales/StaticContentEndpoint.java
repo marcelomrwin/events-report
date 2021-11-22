@@ -126,6 +126,7 @@ public class StaticContentEndpoint {
         }
     }
 
+    @Operation(hidden = true)
     @GET
     @Path("graph")
     @Produces(MediaType.TEXT_HTML)
